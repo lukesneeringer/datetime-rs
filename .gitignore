@@ -1,0 +1,17 @@
+# Rust
+target/
+tarpaulin-report.html
+Cargo.lock
+
+# Environment variables
+.env
+
+# JetBrains IDEs
+.idea
+.vscode
+
+# macOS
+.DS_Store
+
+# Python
+**/.python-version

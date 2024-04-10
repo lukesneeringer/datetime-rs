@@ -1,0 +1,38 @@
+[package]
+name = "datetime-rs"
+version = "0.1.0"
+edition = "2021"
+authors = ["Luke Sneeringer <luke@sneeringer.com>"]
+description = "Date and time"
+keywords = ["date", "time"]
+categories = ["date-and-time"]
+rust-version = "1.70"
+license = "MIT"
+repository = "https://github.com/lukesneeringer/datetime-rs"
+documentation = "https://docs.rs/datetime_rs"
+readme = "README.md"
+exclude = [
+  "/.github/*",
+  "/rustfmt.toml",
+  "/.prettierrc.yaml",
+]
+
+[lib]
+name = "datetime"
+
+[dependencies]
+anyhow = { version = "1", optional = true }
+date-rs = { version = "0.1" }
+serde = { version = "1", optional = true }
+strptime = { version = "0.2" }
+tz-rs = { version = "0.6", optional = true }
+tzdb = { version = "0.6", optional = true, features = ["local"] }
+
+[dev-dependencies]
+assert2 = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1" }
+
+[features]
+default = ["serde"]
+tz = ["dep:anyhow", "dep:tz-rs", "dep:tzdb"]
