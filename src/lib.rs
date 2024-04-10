@@ -14,6 +14,8 @@ use strptime::RawDateTime;
 
 mod format;
 pub mod interval;
+#[cfg(feature = "serde")]
+mod serde;
 
 #[macro_export]
 macro_rules! datetime {
@@ -206,8 +208,10 @@ impl FromStr for DateTime {
     // Attempt several common formats.
     if let Ok(dt) = Parser::new("%Y-%m-%d %H:%M:%S").parse(s) { return dt.try_into(); }
     if let Ok(dt) = Parser::new("%Y-%m-%d %H:%M:%S%.6f").parse(s) { return dt.try_into(); }
+    if let Ok(dt) = Parser::new("%Y-%m-%d %H:%M:%S%.9f").parse(s) { return dt.try_into(); }
     if let Ok(dt) = Parser::new("%Y-%m-%dT%H:%M:%S").parse(s) { return dt.try_into(); }
     if let Ok(dt) = Parser::new("%Y-%m-%dT%H:%M:%S%.6f").parse(s) { return dt.try_into(); }
+    if let Ok(dt) = Parser::new("%Y-%m-%dT%H:%M:%S%.9f").parse(s) { return dt.try_into(); }
     if let Ok(dt) = Parser::new("%Y-%m-%d %H:%M:%SZ").parse(s) { return dt.try_into(); }
     Parser::new("%Y-%m-%dT%H:%M:%SZ").parse(s)?.try_into()
   }
@@ -222,6 +226,7 @@ impl TryFrom<RawDateTime> for DateTime {
     Ok(
       Self::ymd(date.year(), date.month(), date.day())
         .hms(time.hour(), time.minute(), time.second())
+        .nanos(time.nanosecond() as u32)
         .build(),
     )
   }
