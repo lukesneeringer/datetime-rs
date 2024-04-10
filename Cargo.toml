@@ -31,8 +31,8 @@ tzdb = { version = "0.6", optional = true, features = ["local"] }
 [dev-dependencies]
 assert2 = "0.3"
 serde = { version = "1", features = ["derive"] }
-serde_json = { version = "1" }
+serde_test = { version = "1" }
 
 [features]
 default = ["serde"]
-tz = ["dep:anyhow", "dep:tz-rs", "dep:tzdb"]
+tz = ["dep:anyhow", "dep:tz-rs", "dep:tzdb", "date-rs/tzdb"]

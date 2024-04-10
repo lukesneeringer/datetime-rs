@@ -52,6 +52,7 @@ impl<'a> Display for FormattedDateTime<'a> {
           '.' => { prefix = Some('.'); continue; },
           '3' => { div = 1_000_000; continue; },
           '6' => { div = 1_000; continue; },
+          '9' => { div = 1; continue; },
           _ => {},
         };
 
