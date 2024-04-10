@@ -1,0 +1,16 @@
+---
+name: release
+on:
+  release:
+    types:
+      - created
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish the `date-rs` crate.
+        run: cargo publish
+        env:
+          CARGO_NET_GIT_FETCH_WITH_CLI: true
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
