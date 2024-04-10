@@ -25,5 +25,5 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          slug: lukesneeringer/date-rs
+          slug: lukesneeringer/datetime-rs
           fail_ci_if_error: true
