@@ -1,4 +1,4 @@
-# Date
+# Date & Time
 
 [![ci](https://github.com/lukesneeringer/datetime-rs/actions/workflows/ci.yaml/badge.svg)](https://github.com/lukesneeringer/datetime-rs/actions/workflows/ci.yaml)
 [![codecov](https://codecov.io/gh/lukesneeringer/datetime-rs/branch/main/graph/badge.svg?token=YbiBQd8Vn6)](https://codecov.io/gh/lukesneeringer/datetime-rs)
