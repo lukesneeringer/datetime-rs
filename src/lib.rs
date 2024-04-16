@@ -65,6 +65,17 @@ impl DateTime {
     }
   }
 
+  /// Create a new date and time object from the given Unix timestamp, and apply the given time
+  /// zone.
+  #[cfg(feature = "tz")]
+  pub const fn from_timestamp_tz(
+    timestamp: i64, nanos: u32, tz: tz::TimeZoneRef<'static>,
+  ) -> Self {
+    let mut answer = Self::from_timestamp(timestamp, nanos);
+    answer.tz = Some(tz);
+    answer
+  }
+
   /// Return the current timestamp.
   ///
   /// ## Panic
@@ -285,12 +296,37 @@ impl DateTimeBuilder {
   }
 }
 
+trait Sealed {}
+impl Sealed for date::Date {}
+
+/// Convert from a date into a datetime, by way of a builder.
+#[allow(private_bounds)]
+pub trait FromDate: Sealed {
+  /// Create a `DateTimeBuilder` for this Date.
+  fn hms(self, hour: u8, minute: u8, second: u8) -> DateTimeBuilder;
+}
+
+impl FromDate for date::Date {
+  fn hms(self, hour: u8, minute: u8, second: u8) -> DateTimeBuilder {
+    DateTimeBuilder {
+      date: self,
+      seconds: 0,
+      nanos: 0,
+      #[cfg(feature = "tz")]
+      tz: None,
+      offset: 0,
+    }
+    .hms(hour, minute, second)
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use assert2::check;
   use strptime::ParseResult;
 
   use crate::DateTime;
+  use crate::FromDate;
 
   #[test]
   fn test_zero() {
@@ -352,5 +388,26 @@ mod tests {
     let dt = DateTime::ymd(1970, 1, 1).tz("America/Los_Angeles")?.build();
     check!(dt.timestamp() == 3600 * 8);
     Ok(())
+  }
+
+  #[cfg(feature = "tz")]
+  #[test]
+  fn test_unix_tz() {
+    let eastern = tzdb::tz_by_name("America/New_York").unwrap();
+    let dt = DateTime::from_timestamp_tz(1335020400, 0, eastern);
+    check!(dt.timestamp() == 1335020400);
+    check!(dt.year() == 2012);
+    check!(dt.month() == 4);
+    check!(dt.day() == 21);
+    check!(dt.hour() == 11);
+  }
+
+  #[test]
+  fn test_from_date_trait() {
+    let dt = date::date! { 2012-04-21 }.hms(11, 0, 0).build();
+    check!(dt.year() == 2012);
+    check!(dt.month() == 4);
+    check!(dt.day() == 21);
+    check!(dt.hour() == 11);
   }
 }
