@@ -153,8 +153,33 @@ impl DateTime {
 
   /// The Unix timestamp for this date and time.
   #[inline]
+  #[deprecated(since = "0.1.2", note = "Use as_seconds")]
   pub const fn timestamp(&self) -> i64 {
+    self.as_seconds()
+  }
+
+  /// The number of seconds since the Unix epoch for this date and time.
+  #[inline]
+  pub const fn as_seconds(&self) -> i64 {
     self.seconds
+  }
+
+  /// The number of milliseconds since the Unix epoch for this date and time.
+  #[inline]
+  pub const fn as_milliseconds(&self) -> i64 {
+    self.seconds * 1_000 + (self.nanos / 1_000_000) as i64
+  }
+
+  /// The number of microseconds since the Unix epoch for this date and time.
+  #[inline]
+  pub const fn as_microseconds(&self) -> i64 {
+    self.seconds * 1_000_000 + (self.nanos / 1_000) as i64
+  }
+
+  /// The number of nanoseconds since the Unix epoch for this date and time.
+  #[inline]
+  pub const fn as_nanoseconds(&self) -> i128 {
+    self.seconds as i128 * 1_000_000_000 + self.nanos as i128
   }
 
   /// Provide the timestamp adjustment for the time zone.
@@ -374,6 +399,16 @@ mod tests {
     }
 
     Ok(())
+  }
+
+  #[test]
+  #[allow(clippy::inconsistent_digit_grouping)]
+  fn test_precision() {
+    let dt = DateTime::ymd(2012, 4, 21).hms(15, 0, 0).build();
+    check!(dt.as_seconds() == 1335020400);
+    check!(dt.as_milliseconds() == 1335020400_000);
+    check!(dt.as_microseconds() == 1335020400_000_000);
+    check!(dt.as_nanoseconds() == 1335020400_000_000_000);
   }
 
   #[cfg(feature = "tz")]
