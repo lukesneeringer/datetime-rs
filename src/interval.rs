@@ -33,6 +33,21 @@ impl TimeInterval {
   pub fn nanoseconds(&self) -> u32 {
     self.nanos
   }
+
+  /// The number of milliseconds this interval represents.
+  pub fn as_milliseconds(&self) -> i64 {
+    self.seconds * 1_000 + (self.nanos / 1_000_000) as i64
+  }
+
+  /// The number of microseconds this interval represents.
+  pub fn as_microseconds(&self) -> i64 {
+    self.seconds * 1_000_000 + (self.nanos / 1_000) as i64
+  }
+
+  /// The number of nanoseconds this interval represents.
+  pub fn as_nanoseconds(&self) -> i128 {
+    self.seconds as i128 * 1_000_000_000 + self.nanos as i128
+  }
 }
 
 impl Add<TimeInterval> for DateTime {
@@ -129,5 +144,13 @@ mod tests {
       datetime! { 2012-04-21 11:00:00 } - datetime! { 2012-04-21 12:00:00 }
         == TimeInterval::new(-3600, 0)
     );
+  }
+
+  #[test]
+  fn test_as() {
+    let dur = TimeInterval::new(5, 0);
+    check!(dur.as_milliseconds() == 5_000);
+    check!(dur.as_microseconds() == 5_000_000);
+    check!(dur.as_nanoseconds() == 5_000_000_000);
   }
 }
