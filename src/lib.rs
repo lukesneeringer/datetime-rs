@@ -4,18 +4,11 @@ use std::cmp::Ordering;
 use std::str::FromStr;
 use std::time::SystemTime;
 
-use date::Date;
-use date::Weekday;
 use format::FormattedDateTime;
 use strptime::ParseError;
 use strptime::ParseResult;
 use strptime::Parser;
 use strptime::RawDateTime;
-
-mod format;
-pub mod interval;
-#[cfg(feature = "serde")]
-mod serde;
 
 #[macro_export]
 macro_rules! datetime {
@@ -27,13 +20,30 @@ macro_rules! datetime {
   }};
 }
 
+#[cfg(feature = "diesel-pg")]
+mod db;
+mod format;
+pub mod interval;
+#[cfg(feature = "serde")]
+mod serde;
+
+pub use date::date;
+pub use date::Date;
+pub use date::Weekday;
+
+/// Time zone compnents (re-exported from `date-rs` crate).
+#[cfg(feature = "tz")]
+pub mod tz {
+  pub use date::tz::*;
+}
+
 /// A representation of a date and time.
 #[derive(Clone, Copy, Debug, Eq)]
 pub struct DateTime {
   seconds: i64,
   nanos: u32,
   #[cfg(feature = "tz")]
-  tz: Option<tz::timezone::TimeZoneRef<'static>>,
+  tz: Option<tz::TimeZoneRef<'static>>,
 }
 
 impl DateTime {
@@ -65,17 +75,6 @@ impl DateTime {
     }
   }
 
-  /// Create a new date and time object from the given Unix timestamp, and apply the given time
-  /// zone.
-  #[cfg(feature = "tz")]
-  pub const fn from_timestamp_tz(
-    timestamp: i64, nanos: u32, tz: tz::TimeZoneRef<'static>,
-  ) -> Self {
-    let mut answer = Self::from_timestamp(timestamp, nanos);
-    answer.tz = Some(tz);
-    answer
-  }
-
   /// Return the current timestamp.
   ///
   /// ## Panic
@@ -89,11 +88,22 @@ impl DateTime {
   }
 }
 
+#[cfg(feature = "tz")]
+impl DateTime {
+  /// Set the time zone to the provided time zone, without adjusting the underlying absolute
+  /// timestamp.
+  #[inline]
+  pub const fn with_tz(mut self, tz: tz::TimeZoneRef<'static>) -> Self {
+    self.tz = Some(tz);
+    self
+  }
+}
+
 /// Accessors
 impl DateTime {
   /// The year for this date.
   #[inline]
-  pub fn year(&self) -> i16 {
+  pub const fn year(&self) -> i16 {
     Date::from_timestamp(self.tz_seconds()).year()
   }
 
@@ -149,13 +159,6 @@ impl DateTime {
   #[inline]
   pub const fn date(&self) -> Date {
     Date::from_timestamp(self.tz_seconds())
-  }
-
-  /// The Unix timestamp for this date and time.
-  #[inline]
-  #[deprecated(since = "0.1.2", note = "Use as_seconds")]
-  pub const fn timestamp(&self) -> i64 {
-    self.as_seconds()
   }
 
   /// The number of seconds since the Unix epoch for this date and time.
@@ -275,13 +278,13 @@ pub struct DateTimeBuilder {
   seconds: i64,
   nanos: u32,
   #[cfg(feature = "tz")]
-  tz: Option<tz::timezone::TimeZoneRef<'static>>,
+  tz: Option<tz::TimeZoneRef<'static>>,
   offset: i64,
 }
 
 impl DateTimeBuilder {
   /// Attach an hour, minute, and second to the datetime.
-  pub fn hms(mut self, hour: u8, minute: u8, second: u8) -> Self {
+  pub const fn hms(mut self, hour: u8, minute: u8, second: u8) -> Self {
     assert!(hour < 24, "Hour out of bounds");
     assert!(minute < 60, "Minute out of bounds");
     assert!(second < 60, "Second out of bounds");
@@ -290,7 +293,7 @@ impl DateTimeBuilder {
   }
 
   /// Attach fractional to the datetime.
-  pub fn nanos(mut self, nanos: u32) -> Self {
+  pub const fn nanos(mut self, nanos: u32) -> Self {
     assert!(nanos < 1_000_000_000, "Nanos out of bounds.");
     self.nanos = nanos;
     self
@@ -302,16 +305,17 @@ impl DateTimeBuilder {
   /// the YMD/HMS specified to the date and time builder should be preserved, and the time zone's
   /// offset applied to the underlying timestamp to preserve the date and time on the wall clock.
   #[cfg(feature = "tz")]
-  pub fn tz(mut self, tz: &'static str) -> anyhow::Result<Self> {
-    let tz = tzdb::tz_by_name(tz).ok_or(anyhow::format_err!("Time zone not found: {}", tz))?;
-    self.offset =
-      tz.find_local_time_type(self.date.timestamp() + self.seconds)?.ut_offset() as i64;
+  pub const fn tz(mut self, tz: tz::TimeZoneRef<'static>) -> tz::TzResult<Self> {
+    self.offset = match tz.find_local_time_type(self.date.timestamp() + self.seconds) {
+      Ok(t) => t.ut_offset() as i64,
+      Err(e) => return Err(e),
+    };
     self.tz = Some(tz);
     Ok(self)
   }
 
   /// Build the final [`DateTime`] object.
-  pub fn build(self) -> DateTime {
+  pub const fn build(self) -> DateTime {
     DateTime {
       seconds: self.date.timestamp() + self.seconds - self.offset,
       nanos: self.nanos,
@@ -350,6 +354,8 @@ mod tests {
   use assert2::check;
   use strptime::ParseResult;
 
+  #[cfg(feature = "tz")]
+  use crate::tz;
   use crate::DateTime;
   use crate::FromDate;
 
@@ -413,24 +419,23 @@ mod tests {
 
   #[cfg(feature = "tz")]
   #[test]
-  fn test_tz() -> anyhow::Result<()> {
-    let dt = DateTime::ymd(2012, 4, 21).hms(11, 0, 0).tz("America/New_York")?.build();
-    check!(dt.timestamp() == 1335020400);
+  fn test_tz() -> tz::TzResult<()> {
+    let dt = DateTime::ymd(2012, 4, 21).hms(11, 0, 0).tz(tz::us::EASTERN)?.build();
+    check!(dt.as_seconds() == 1335020400);
     check!(dt.year() == 2012);
     check!(dt.month() == 4);
     check!(dt.day() == 21);
     check!(dt.hour() == 11);
-    let dt = DateTime::ymd(1970, 1, 1).tz("America/Los_Angeles")?.build();
-    check!(dt.timestamp() == 3600 * 8);
+    let dt = DateTime::ymd(1970, 1, 1).tz(tz::us::PACIFIC)?.build();
+    check!(dt.as_seconds() == 3600 * 8);
     Ok(())
   }
 
   #[cfg(feature = "tz")]
   #[test]
   fn test_unix_tz() {
-    let eastern = tzdb::tz_by_name("America/New_York").unwrap();
-    let dt = DateTime::from_timestamp_tz(1335020400, 0, eastern);
-    check!(dt.timestamp() == 1335020400);
+    let dt = DateTime::from_timestamp(1335020400, 0).with_tz(tz::us::EASTERN);
+    check!(dt.as_seconds() == 1335020400);
     check!(dt.year() == 2012);
     check!(dt.month() == 4);
     check!(dt.day() == 21);

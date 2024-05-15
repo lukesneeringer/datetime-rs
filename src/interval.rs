@@ -12,7 +12,7 @@ pub struct TimeInterval {
 
 impl TimeInterval {
   /// Create a new time interval from seconds and nanoseconds.
-  pub fn new(seconds: i64, nanos: u32) -> Self {
+  pub const fn new(seconds: i64, nanos: u32) -> Self {
     Self { seconds, nanos }
   }
 
@@ -21,7 +21,7 @@ impl TimeInterval {
   /// Note that the nanoseconds value is always positive, even if seconds is negative. For example,
   /// an interval representing -2.5 seconds will be represented as -3 seconds and 500,000,000
   /// nanos.
-  pub fn seconds(&self) -> i64 {
+  pub const fn seconds(&self) -> i64 {
     self.seconds
   }
 
@@ -30,22 +30,22 @@ impl TimeInterval {
   /// Note that the nanoseconds value is always positive, even if seconds is negative. For example,
   /// an interval representing -2.5 seconds will be represented as -3 seconds and 500,000,000
   /// nanos.
-  pub fn nanoseconds(&self) -> u32 {
+  pub const fn nanoseconds(&self) -> u32 {
     self.nanos
   }
 
   /// The number of milliseconds this interval represents.
-  pub fn as_milliseconds(&self) -> i64 {
+  pub const fn as_milliseconds(&self) -> i64 {
     self.seconds * 1_000 + (self.nanos / 1_000_000) as i64
   }
 
   /// The number of microseconds this interval represents.
-  pub fn as_microseconds(&self) -> i64 {
+  pub const fn as_microseconds(&self) -> i64 {
     self.seconds * 1_000_000 + (self.nanos / 1_000) as i64
   }
 
   /// The number of nanoseconds this interval represents.
-  pub fn as_nanoseconds(&self) -> i128 {
+  pub const fn as_nanoseconds(&self) -> i128 {
     self.seconds as i128 * 1_000_000_000 + self.nanos as i128
   }
 }
