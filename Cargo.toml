@@ -21,7 +21,7 @@ exclude = [
 name = "datetime"
 
 [dependencies]
-date-rs = "1"
+date-rs = { version = "1", default-features = false }
 diesel = { version = "2", optional = true }
 serde = { version = "1", optional = true }
 strptime = "1"
@@ -36,4 +36,5 @@ serde_test = { version = "1" }
 [features]
 default = ["serde"]
 diesel-pg = ["date-rs/diesel-pg", "dep:diesel", "diesel/postgres"]
+serde = ["dep:serde", "date-rs/serde"]
 tz = ["dep:tz-rs", "dep:tzdb", "date-rs/tz"]
