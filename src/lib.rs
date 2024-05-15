@@ -18,6 +18,20 @@ macro_rules! datetime {
       $crate::DateTime::ymd($y, $m, $d).hms($h, $mi, $s).build()
     }
   }};
+  ($y:literal-$m:literal-$d:literal $h:literal : $mi:literal : $s:literal $($tz:ident)::+) => {{
+    #[cfg(feature = "tz")]
+    #[allow(clippy::zero_prefixed_literal)]
+    {
+      match $crate::DateTime::ymd($y, $m, $d).hms($h, $mi, $s).tz($crate::tz::$($tz)::+) {
+        Ok(dt) => dt.build(),
+        Err(_) => panic!("invalid date/time and time zone combination"),
+      }
+    }
+    #[cfg(not(feature = "tz"))]
+    {
+      compile_error!("The `tz` feature must be enabled to specify a time zone.");
+    }
+  }};
 }
 
 #[cfg(feature = "diesel-pg")]
@@ -35,6 +49,26 @@ pub use date::Weekday;
 #[cfg(feature = "tz")]
 pub mod tz {
   pub use date::tz::*;
+
+  #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+  pub(crate) enum TimeZone {
+    Unspecified,
+    Tz(::tz::TimeZoneRef<'static>),
+    FixedOffset(i32),
+  }
+
+  impl TimeZone {
+    pub(crate) const fn ut_offset(&self, timestamp: i64) -> TzResult<i32> {
+      match self {
+        Self::Unspecified => Ok(0),
+        Self::FixedOffset(offset) => Ok(*offset),
+        Self::Tz(tz) => match tz.find_local_time_type(timestamp) {
+          Ok(t) => Ok(t.ut_offset()),
+          Err(e) => Err(e),
+        },
+      }
+    }
+  }
 }
 
 /// A representation of a date and time.
@@ -43,7 +77,7 @@ pub struct DateTime {
   seconds: i64,
   nanos: u32,
   #[cfg(feature = "tz")]
-  tz: Option<tz::TimeZoneRef<'static>>,
+  tz: tz::TimeZone,
 }
 
 impl DateTime {
@@ -54,7 +88,7 @@ impl DateTime {
       seconds: 0,
       nanos: 0,
       #[cfg(feature = "tz")]
-      tz: None,
+      tz: tz::TimeZone::Unspecified,
       offset: 0,
     }
   }
@@ -71,7 +105,7 @@ impl DateTime {
       seconds: timestamp,
       nanos,
       #[cfg(feature = "tz")]
-      tz: None,
+      tz: tz::TimeZone::Unspecified,
     }
   }
 
@@ -94,7 +128,7 @@ impl DateTime {
   /// timestamp.
   #[inline]
   pub const fn with_tz(mut self, tz: tz::TimeZoneRef<'static>) -> Self {
-    self.tz = Some(tz);
+    self.tz = tz::TimeZone::Tz(tz);
     self
   }
 }
@@ -104,43 +138,43 @@ impl DateTime {
   /// The year for this date.
   #[inline]
   pub const fn year(&self) -> i16 {
-    Date::from_timestamp(self.tz_seconds()).year()
+    Date::from_timestamp(self.tz_adjusted_seconds()).year()
   }
 
   /// The month for this date.
   #[inline]
   pub const fn month(&self) -> u8 {
-    Date::from_timestamp(self.tz_seconds()).month()
+    Date::from_timestamp(self.tz_adjusted_seconds()).month()
   }
 
   /// The day of the month for this date.
   #[inline]
   pub const fn day(&self) -> u8 {
-    Date::from_timestamp(self.tz_seconds()).day()
+    Date::from_timestamp(self.tz_adjusted_seconds()).day()
   }
 
   /// The day of the week for this date.
   #[inline]
   pub const fn weekday(&self) -> Weekday {
-    Date::from_timestamp(self.tz_seconds()).weekday()
+    Date::from_timestamp(self.tz_adjusted_seconds()).weekday()
   }
 
   /// The hour of the day for this date and time. Range: `[0, 24)`
   #[inline]
   pub const fn hour(&self) -> u8 {
-    (self.tz_seconds() % 86_400 / 3_600) as u8
+    (self.tz_adjusted_seconds() % 86_400 / 3_600) as u8
   }
 
   /// The minute of the hour for this date and time. Range: `[0, 60)`
   #[inline]
   pub const fn minute(&self) -> u8 {
-    ((self.tz_seconds() % 3600) / 60) as u8
+    ((self.tz_adjusted_seconds() % 3600) / 60) as u8
   }
 
   /// The second of the minute for this date and time. Range: `[0, 60)`
   #[inline]
   pub const fn second(&self) -> u8 {
-    (self.tz_seconds() % 60) as u8
+    (self.tz_adjusted_seconds() % 60) as u8
   }
 
   /// The nanosecond of the second for this date and time. Range: `[0, 1_000_000_000)`
@@ -158,7 +192,7 @@ impl DateTime {
   /// The date corresponding to this datetime.
   #[inline]
   pub const fn date(&self) -> Date {
-    Date::from_timestamp(self.tz_seconds())
+    Date::from_timestamp(self.tz_adjusted_seconds())
   }
 
   /// The number of seconds since the Unix epoch for this date and time.
@@ -185,20 +219,24 @@ impl DateTime {
     self.seconds as i128 * 1_000_000_000 + self.nanos as i128
   }
 
-  /// Provide the timestamp adjustment for the time zone.
+  /// Provide the number of seconds since the epoch in the time zone with the same offset as this
+  /// datetime's time zone.
   #[inline(always)]
-  #[cfg(feature = "tz")]
-  const fn tz_seconds(&self) -> i64 {
-    let Some(tz) = self.tz else { return self.seconds };
-    let Ok(tz) = tz.find_local_time_type(self.seconds) else { panic!("Invalid time zone") };
-    self.seconds + tz.ut_offset() as i64
+  const fn tz_adjusted_seconds(&self) -> i64 {
+    self.seconds + self.tz_offset()
   }
 
-  /// A stub method to adjust for time zones, for compatibility with the `tz` feature elsewhere.
-  #[inline(always)]
-  #[cfg(not(feature = "tz"))]
-  const fn tz_seconds(&self) -> i64 {
-    self.seconds
+  /// Provide the offset, in seconds
+  const fn tz_offset(&self) -> i64 {
+    #[cfg(feature = "tz")]
+    {
+      match self.tz.ut_offset(self.seconds) {
+        Ok(offset) => offset as i64,
+        Err(_) => panic!("Invalid time zone"),
+      }
+    }
+    #[cfg(not(feature = "tz"))]
+    0
   }
 }
 
@@ -245,12 +283,18 @@ impl FromStr for DateTime {
   #[rustfmt::skip]
   fn from_str(s: &str) -> ParseResult<Self> {
     // Attempt several common formats.
-    if let Ok(dt) = Parser::new("%Y-%m-%d %H:%M:%S").parse(s) { return dt.try_into(); }
-    if let Ok(dt) = Parser::new("%Y-%m-%d %H:%M:%S%.6f").parse(s) { return dt.try_into(); }
-    if let Ok(dt) = Parser::new("%Y-%m-%d %H:%M:%S%.9f").parse(s) { return dt.try_into(); }
     if let Ok(dt) = Parser::new("%Y-%m-%dT%H:%M:%S").parse(s) { return dt.try_into(); }
+    if let Ok(dt) = Parser::new("%Y-%m-%dT%H:%M:%S%z").parse(s) { return dt.try_into(); }
+    if let Ok(dt) = Parser::new("%Y-%m-%d %H:%M:%S").parse(s) { return dt.try_into(); }
+    if let Ok(dt) = Parser::new("%Y-%m-%d %H:%M:%S%z").parse(s) { return dt.try_into(); }
     if let Ok(dt) = Parser::new("%Y-%m-%dT%H:%M:%S%.6f").parse(s) { return dt.try_into(); }
+    if let Ok(dt) = Parser::new("%Y-%m-%dT%H:%M:%S%.6f%z").parse(s) { return dt.try_into(); }
+    if let Ok(dt) = Parser::new("%Y-%m-%d %H:%M:%S%.6f").parse(s) { return dt.try_into(); }
+    if let Ok(dt) = Parser::new("%Y-%m-%d %H:%M:%S%.6f%z").parse(s) { return dt.try_into(); }
     if let Ok(dt) = Parser::new("%Y-%m-%dT%H:%M:%S%.9f").parse(s) { return dt.try_into(); }
+    if let Ok(dt) = Parser::new("%Y-%m-%dT%H:%M:%S%.9f%z").parse(s) { return dt.try_into(); }
+    if let Ok(dt) = Parser::new("%Y-%m-%d %H:%M:%S%.9f").parse(s) { return dt.try_into(); }
+    if let Ok(dt) = Parser::new("%Y-%m-%d %H:%M:%S%.9f%z").parse(s) { return dt.try_into(); }
     if let Ok(dt) = Parser::new("%Y-%m-%d %H:%M:%SZ").parse(s) { return dt.try_into(); }
     Parser::new("%Y-%m-%dT%H:%M:%SZ").parse(s)?.try_into()
   }
@@ -262,12 +306,22 @@ impl TryFrom<RawDateTime> for DateTime {
   fn try_from(value: RawDateTime) -> ParseResult<Self> {
     let date = value.date()?;
     let time = value.time().unwrap_or_default();
-    Ok(
-      Self::ymd(date.year(), date.month(), date.day())
+    Ok(match time.utc_offset() {
+      Some(utc_offset) => {
+        #[cfg(not(feature = "tz"))]
+        panic!("Enable the `tz` feature to parse datetimes with UTC offsets.");
+        #[cfg(feature = "tz")]
+        Self::ymd(date.year(), date.month(), date.day())
+          .hms(time.hour(), time.minute(), time.second())
+          .nanos(time.nanosecond() as u32)
+          .utc_offset(utc_offset)
+          .build()
+      },
+      None => Self::ymd(date.year(), date.month(), date.day())
         .hms(time.hour(), time.minute(), time.second())
         .nanos(time.nanosecond() as u32)
         .build(),
-    )
+    })
   }
 }
 
@@ -278,7 +332,7 @@ pub struct DateTimeBuilder {
   seconds: i64,
   nanos: u32,
   #[cfg(feature = "tz")]
-  tz: Option<tz::TimeZoneRef<'static>>,
+  tz: tz::TimeZone,
   offset: i64,
 }
 
@@ -310,8 +364,19 @@ impl DateTimeBuilder {
       Ok(t) => t.ut_offset() as i64,
       Err(e) => return Err(e),
     };
-    self.tz = Some(tz);
+    self.tz = tz::TimeZone::Tz(tz);
     Ok(self)
+  }
+
+  /// Attach a UTC offset to the datetime.
+  ///
+  /// This method assumes that the offset _modifies_ the underlying timestamp; in other words, the
+  /// YMD/HMS specified to the date and time builder should be preserved, and the offset applied to
+  /// the underlying timestamp to preserve the date and time on the wall clock.
+  pub(crate) const fn utc_offset(mut self, offset: i32) -> Self {
+    self.offset = offset as i64;
+    self.tz = tz::TimeZone::FixedOffset(offset);
+    self
   }
 
   /// Build the final [`DateTime`] object.
@@ -342,7 +407,7 @@ impl FromDate for date::Date {
       seconds: 0,
       nanos: 0,
       #[cfg(feature = "tz")]
-      tz: None,
+      tz: tz::TimeZone::Unspecified,
       offset: 0,
     }
     .hms(hour, minute, second)
@@ -404,6 +469,21 @@ mod tests {
       check!(dt.hour() == 11);
     }
 
+    Ok(())
+  }
+
+  #[test]
+  #[cfg(feature = "tz")]
+  fn test_parse_str_tz() -> ParseResult<()> {
+    for s in
+      ["2012-04-21 11:00:00-0400", "2012-04-21T11:00:00-0400", "2012-04-21T11:00:00.000000-0400"]
+    {
+      let dt = s.parse::<DateTime>()?;
+      check!(dt.year() == 2012);
+      check!(dt.month() == 4);
+      check!(dt.day() == 21);
+      check!(dt.hour() == 11);
+    }
     Ok(())
   }
 

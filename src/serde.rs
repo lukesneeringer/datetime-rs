@@ -11,11 +11,11 @@ use crate::DateTime;
 impl Serialize for DateTime {
   fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
     if self.nanos == 0 {
-      serializer.collect_str(&self.format("%Y-%m-%dT%H:%M:%S"))
+      serializer.collect_str(&self.format("%Y-%m-%dT%H:%M:%S%z"))
     } else if self.nanos % 1_000 == 0 {
-      serializer.collect_str(&self.format("%Y-%m-%dT%H:%M:%S%.6f"))
+      serializer.collect_str(&self.format("%Y-%m-%dT%H:%M:%S%.6f%z"))
     } else {
-      serializer.collect_str(&self.format("%Y-%m-%dT%H:%M:%S%.9f"))
+      serializer.collect_str(&self.format("%Y-%m-%dT%H:%M:%S%.9f%z"))
     }
   }
 }
@@ -58,5 +58,16 @@ mod tests {
     assert_tokens(&DateTime::ymd(2024, 7, 4).hms(15, 30, 45).nanos(123_456_789).build(), &[
       Token::Str("2024-07-04T15:30:45.123456789"),
     ]);
+  }
+
+  #[cfg(feature = "tz")]
+  #[test]
+  fn test_serde_tz() {
+    assert_tokens(&datetime! { 2012-04-21 11:00:00 us::EASTERN }, &[Token::Str(
+      "2012-04-21T11:00:00-0400",
+    )]);
+    assert_tokens(&datetime! { 2012-04-21 11:00:00 europe::BERLIN }, &[Token::Str(
+      "2012-04-21T11:00:00+0200",
+    )]);
   }
 }

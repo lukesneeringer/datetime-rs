@@ -14,16 +14,15 @@ pub struct FormattedDateTime<'a> {
 }
 
 impl<'a> FormattedDateTime<'a> {
-  fn offset(&self) -> String {
-    format!(
-      "{}{:2}{:2}",
-      match self.dt.tz_seconds().signum() {
-        0.. => '+',
-        ..=-1 => '-',
-      },
-      self.dt.tz_seconds() / 60,
-      self.dt.tz_seconds() % 60,
-    )
+  fn tz_offset(&self) -> String {
+    #[cfg(feature = "tz")]
+    match self.dt.tz {
+      crate::tz::TimeZone::Tz(_) | crate::tz::TimeZone::FixedOffset(_) =>
+        format!("{:+03}{:02}", self.dt.tz_offset() / 3600, self.dt.tz_offset() % 3600 / 60,),
+      crate::tz::TimeZone::Unspecified => String::new(),
+    }
+    #[cfg(not(feature = "tz"))]
+    String::new()
   }
 }
 
@@ -98,7 +97,7 @@ impl<'a> Display for FormattedDateTime<'a> {
           })?,
           'M' => write_padded!(f, padding, 2, dt.minute())?,
           'S' => write_padded!(f, padding, 2, dt.second())?,
-          'z' => write!(f, "{}", self.offset())?,
+          'z' => write!(f, "{}", self.tz_offset())?,
           'P' => write!(f, "{}", if dt.hour() > 12 { "PM" } else { "AM" })?,
           'p' => write!(f, "{}", if dt.hour() > 12 { "pm" } else { "am" })?,
           's' => write!(f, "{}", dt.seconds)?,
