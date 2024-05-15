@@ -34,7 +34,7 @@ serde = { version = "1", features = ["derive"] }
 serde_test = { version = "1" }
 
 [features]
-default = ["serde", "tz"]
+default = ["serde"]
 diesel-pg = ["date-rs/diesel-pg", "dep:diesel", "diesel/postgres"]
 serde = ["dep:serde", "date-rs/serde"]
 tz = ["dep:tz-rs", "dep:tzdb", "date-rs/tz"]
