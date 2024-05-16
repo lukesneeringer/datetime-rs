@@ -307,16 +307,14 @@ impl TryFrom<RawDateTime> for DateTime {
     let date = value.date()?;
     let time = value.time().unwrap_or_default();
     Ok(match time.utc_offset() {
-      Some(utc_offset) => {
-        #[cfg(not(feature = "tz"))]
-        panic!("Enable the `tz` feature to parse datetimes with UTC offsets.");
-        #[cfg(feature = "tz")]
-        Self::ymd(date.year(), date.month(), date.day())
-          .hms(time.hour(), time.minute(), time.second())
-          .nanos(time.nanosecond() as u32)
-          .utc_offset(utc_offset)
-          .build()
-      },
+      #[cfg(feature = "tz")]
+      Some(utc_offset) => Self::ymd(date.year(), date.month(), date.day())
+        .hms(time.hour(), time.minute(), time.second())
+        .nanos(time.nanosecond() as u32)
+        .utc_offset(utc_offset)
+        .build(),
+      #[cfg(not(feature = "tz"))]
+      Some(_) => panic!("Enable the `tz` feature to parse datetimes with UTC offsets."),
       None => Self::ymd(date.year(), date.month(), date.day())
         .hms(time.hour(), time.minute(), time.second())
         .nanos(time.nanosecond() as u32)
@@ -373,6 +371,7 @@ impl DateTimeBuilder {
   /// This method assumes that the offset _modifies_ the underlying timestamp; in other words, the
   /// YMD/HMS specified to the date and time builder should be preserved, and the offset applied to
   /// the underlying timestamp to preserve the date and time on the wall clock.
+  #[cfg(feature = "tz")]
   pub(crate) const fn utc_offset(mut self, offset: i32) -> Self {
     self.offset = offset as i64;
     self.tz = tz::TimeZone::FixedOffset(offset);
@@ -476,7 +475,7 @@ mod tests {
   #[cfg(feature = "tz")]
   fn test_parse_str_tz() -> ParseResult<()> {
     for s in
-      ["2012-04-21 11:00:00-0400", "2012-04-21T11:00:00-0400", "2012-04-21T11:00:00.000000-0400"]
+      ["2012-04-21 11:00:00-0400", "2012-04-21T11:00:00-0400", "2012-04-21 11:00:00.000000-0400"]
     {
       let dt = s.parse::<DateTime>()?;
       check!(dt.year() == 2012);

@@ -24,7 +24,7 @@ name = "datetime"
 date-rs = { version = "1", default-features = false }
 diesel = { version = "2", optional = true }
 serde = { version = "1", optional = true }
-strptime = "1.1"
+strptime = "1.1.3"
 tz-rs = { version = "0.6", optional = true }
 tzdb = { version = "0.6", optional = true, features = ["local"] }
 
