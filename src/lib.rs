@@ -73,6 +73,10 @@ pub mod tz {
 
 /// A representation of a date and time.
 #[derive(Clone, Copy, Debug, Eq)]
+#[cfg_attr(feature = "diesel-pg", derive(diesel::AsExpression, diesel::FromSqlRow))]
+#[cfg_attr(feature = "diesel-pg", diesel(
+    sql_type = diesel::sql_types::Timestamp,
+    sql_type = diesel::sql_types::Timestamptz))]
 pub struct DateTime {
   seconds: i64,
   nanos: u32,
