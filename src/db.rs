@@ -20,6 +20,12 @@ impl ToSql<sql_types::Timestamp, Pg> for DateTime {
   }
 }
 
+impl ToSql<sql_types::Timestamptz, Pg> for DateTime {
+  fn to_sql<'se>(&'se self, out: &mut Output<'se, '_, Pg>) -> SerializeResult {
+    ToSql::<sql_types::Timestamp, Pg>::to_sql(self, out)
+  }
+}
+
 impl FromSql<sql_types::Timestamp, Pg> for DateTime {
   fn from_sql(bytes: PgValue<'_>) -> DeserializeResult<Self> {
     let PgTimestamp(micros) = FromSql::<diesel::sql_types::Timestamp, Pg>::from_sql(bytes)?;
@@ -32,6 +38,12 @@ impl FromSql<sql_types::Timestamp, Pg> for DateTime {
     };
     let duration = TimeInterval::new(seconds, micros as u32 * 1_000);
     Ok(PG_EPOCH + duration)
+  }
+}
+
+impl FromSql<sql_types::Timestamptz, Pg> for DateTime {
+  fn from_sql(bytes: PgValue<'_>) -> DeserializeResult<Self> {
+    FromSql::<sql_types::Timestamp, Pg>::from_sql(bytes)
   }
 }
 
