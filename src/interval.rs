@@ -1,5 +1,7 @@
 use std::ops::Add;
+use std::ops::AddAssign;
 use std::ops::Sub;
+use std::ops::SubAssign;
 
 use crate::DateTime;
 
@@ -65,6 +67,17 @@ impl Add<TimeInterval> for DateTime {
   }
 }
 
+impl AddAssign<TimeInterval> for DateTime {
+  fn add_assign(&mut self, rhs: TimeInterval) {
+    self.seconds += rhs.seconds;
+    self.nanos += rhs.nanos;
+    while self.nanos >= 1_000_000_000 {
+      self.seconds += 1;
+      self.nanos -= 1_000_000_000;
+    }
+  }
+}
+
 impl Sub<TimeInterval> for DateTime {
   type Output = DateTime;
 
@@ -80,6 +93,20 @@ impl Sub<TimeInterval> for DateTime {
       nanos,
       #[cfg(feature = "tz")]
       tz: self.tz,
+    }
+  }
+}
+
+impl SubAssign<TimeInterval> for DateTime {
+  fn sub_assign(&mut self, rhs: TimeInterval) {
+    self.seconds -= rhs.seconds;
+    match self.nanos >= rhs.nanos {
+      true => self.nanos -= rhs.nanos,
+      false => {
+        self.nanos += 1_000_000_000;
+        self.seconds -= 1;
+        self.nanos -= rhs.nanos;
+      },
     }
   }
 }
@@ -123,6 +150,16 @@ mod tests {
   }
 
   #[test]
+  fn test_add_assign() {
+    let mut dt = datetime! { 2012-04-21 11:00:00 };
+    dt += TimeInterval::new(3600, 0);
+    check!(dt == datetime! { 2012-04-21 12:00:00 });
+    dt += TimeInterval::new(0, 750_000_000);
+    dt += TimeInterval::new(0, 250_000_000);
+    check!(dt == datetime! { 2012-04-21 12:00:01 });
+  }
+
+  #[test]
   fn test_sub() {
     check!(
       datetime! { 2012-04-21 11:00:00 } - TimeInterval::new(3600, 0)
@@ -132,6 +169,17 @@ mod tests {
       datetime! { 2012-04-21 11:00:00 } - TimeInterval::new(0, 500_000_000)
         == DateTime::ymd(2012, 4, 21).hms(10, 59, 59).nanos(500_000_000).build()
     );
+  }
+
+  #[test]
+  fn test_sub_assign() {
+    let mut dt = datetime! { 2012-04-21 11:00:00 };
+    dt -= TimeInterval::new(3600, 0);
+    check!(dt == datetime! { 2012-04-21 10:00:00 });
+    dt -= TimeInterval::new(0, 750_000_000);
+    dt -= TimeInterval::new(0, 350_000_000);
+    dt -= TimeInterval::new(0, 900_000_000);
+    check!(dt == datetime! { 2012-04-21 09:59:58 });
   }
 
   #[test]
