@@ -1,6 +1,6 @@
 [package]
 name = "datetime-rs"
-version = "1.2.0"
+version = "1.3.0"
 edition = "2021"
 authors = ["Luke Sneeringer <luke@sneeringer.com>"]
 description = "Date and time"
@@ -38,3 +38,6 @@ default = ["serde"]
 diesel-pg = ["date-rs/diesel-pg", "dep:diesel", "diesel/postgres"]
 serde = ["dep:serde", "date-rs/serde"]
 tz = ["dep:tz-rs", "dep:tzdb", "date-rs/tz"]
+
+[lints.rust]
+unexpected_cfgs = { level = "allow", check-cfg = ['cfg(tarpaulin_include)'] }
