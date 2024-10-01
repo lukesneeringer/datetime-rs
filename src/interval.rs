@@ -1,5 +1,6 @@
 use std::ops::Add;
 use std::ops::AddAssign;
+use std::ops::Div;
 use std::ops::Sub;
 use std::ops::SubAssign;
 
@@ -125,13 +126,21 @@ impl Sub for DateTime {
   }
 }
 
+impl Div for TimeInterval {
+  type Output = f64;
+
+  fn div(self, rhs: Self) -> Self::Output {
+    self.as_nanoseconds() as f64 / rhs.as_nanoseconds() as f64
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use assert2::check;
 
   use super::*;
-  use crate::datetime;
   use crate::DateTime;
+  use crate::datetime;
 
   #[test]
   fn test_add() {
@@ -192,6 +201,14 @@ mod tests {
       datetime! { 2012-04-21 11:00:00 } - datetime! { 2012-04-21 12:00:00 }
         == TimeInterval::new(-3600, 0)
     );
+  }
+
+  #[test]
+  fn test_div() {
+    check!(TimeInterval::new(3600, 0) / TimeInterval::new(1800, 0) == 2.0);
+    check!(TimeInterval::new(-1800, 0) / TimeInterval::new(-3600, 0) == 0.5);
+    check!(TimeInterval::new(-1800, 0) / TimeInterval::new(3600, 0) == -0.5);
+    check!(TimeInterval::new(0, 3600) / TimeInterval::new(0, 1800) == 2.0);
   }
 
   #[test]

@@ -1,10 +1,10 @@
 use std::fmt;
 
-use serde::de::Visitor;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
 use serde::Serializer;
+use serde::de::Visitor;
 
 use crate::DateTime;
 
@@ -43,11 +43,11 @@ impl<'de> Deserialize<'de> for DateTime {
 
 #[cfg(test)]
 mod tests {
-  use serde_test::assert_tokens;
   use serde_test::Token;
+  use serde_test::assert_tokens;
 
-  use crate::datetime;
   use crate::DateTime;
+  use crate::datetime;
 
   #[test]
   fn test_serde() {

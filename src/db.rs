@@ -2,16 +2,16 @@
 
 use diesel::deserialize::FromSql;
 use diesel::deserialize::Result as DeserializeResult;
-use diesel::pg::data_types::PgTimestamp;
 use diesel::pg::Pg;
 use diesel::pg::PgValue;
+use diesel::pg::data_types::PgTimestamp;
 use diesel::serialize::Output;
 use diesel::serialize::Result as SerializeResult;
 use diesel::serialize::ToSql;
 use diesel::sql_types;
 
-use crate::interval::TimeInterval;
 use crate::DateTime;
+use crate::interval::TimeInterval;
 
 impl ToSql<sql_types::Timestamp, Pg> for DateTime {
   fn to_sql<'se>(&'se self, out: &mut Output<'se, '_, Pg>) -> SerializeResult {

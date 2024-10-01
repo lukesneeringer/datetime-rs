@@ -41,9 +41,9 @@ pub mod interval;
 #[cfg(feature = "serde")]
 mod serde;
 
-pub use date::date;
 pub use date::Date;
 pub use date::Weekday;
+pub use date::date;
 
 /// Time zone compnents (re-exported from `date-rs` crate).
 #[cfg(feature = "tz")]
@@ -422,10 +422,10 @@ mod tests {
   use assert2::check;
   use strptime::ParseResult;
 
-  #[cfg(feature = "tz")]
-  use crate::tz;
   use crate::DateTime;
   use crate::FromDate;
+  #[cfg(feature = "tz")]
+  use crate::tz;
 
   #[test]
   fn test_zero() {
