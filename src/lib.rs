@@ -1,6 +1,7 @@
 //! `datetime-rs` provides a representation of a date and time.
 
 use std::cmp::Ordering;
+use std::fmt;
 use std::str::FromStr;
 use std::time::SystemTime;
 
@@ -72,7 +73,7 @@ pub mod tz {
 }
 
 /// A representation of a date and time.
-#[derive(Clone, Copy, Debug, Eq)]
+#[derive(Clone, Copy, Eq)]
 #[cfg_attr(feature = "diesel-pg", derive(diesel::AsExpression, diesel::FromSqlRow))]
 #[cfg_attr(feature = "diesel-pg", diesel(
     sql_type = diesel::sql_types::Timestamp,
@@ -327,6 +328,12 @@ impl TryFrom<RawDateTime> for DateTime {
   }
 }
 
+impl fmt::Debug for DateTime {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(f, "DateTime {{ seconds: {}, nanos: {} }}", self.seconds, self.nanos)
+  }
+}
+
 /// An intermediate builder for [`DateTime`].
 #[must_use]
 pub struct DateTimeBuilder {
@@ -532,5 +539,11 @@ mod tests {
     check!(dt.month() == 4);
     check!(dt.day() == 21);
     check!(dt.hour() == 11);
+  }
+
+  #[test]
+  fn test_debug() {
+    let dt = date::date! { 2012-04-21 }.hms(15, 0, 0).build();
+    check!(format!("{:?}", dt) == "DateTime { seconds: 1335020400, nanos: 0 }");
   }
 }
