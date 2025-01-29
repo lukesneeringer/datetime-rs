@@ -13,7 +13,7 @@ pub struct FormattedDateTime<'a> {
   pub(crate) format: &'a str,
 }
 
-impl<'a> FormattedDateTime<'a> {
+impl FormattedDateTime<'_> {
   fn tz_offset(&self) -> String {
     #[cfg(feature = "tz")]
     match self.dt.tz {
@@ -26,13 +26,13 @@ impl<'a> FormattedDateTime<'a> {
   }
 }
 
-impl<'a> Debug for FormattedDateTime<'a> {
+impl Debug for FormattedDateTime<'_> {
   fn fmt(&self, f: &mut Formatter<'_>) -> Result {
     Display::fmt(self, f)
   }
 }
 
-impl<'a> Display for FormattedDateTime<'a> {
+impl Display for FormattedDateTime<'_> {
   fn fmt(&self, f: &mut Formatter<'_>) -> Result {
     // Iterate over the format string and consume it.
     let dt = self.dt;
@@ -134,7 +134,7 @@ impl<'a> Display for FormattedDateTime<'a> {
   }
 }
 
-impl<'a> PartialEq<&str> for FormattedDateTime<'a> {
+impl PartialEq<&str> for FormattedDateTime<'_> {
   fn eq(&self, other: &&str) -> bool {
     &self.to_string().as_str() == other
   }

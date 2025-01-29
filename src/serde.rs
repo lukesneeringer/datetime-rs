@@ -22,7 +22,7 @@ impl Serialize for DateTime {
 
 struct DateTimeVisitor;
 
-impl<'de> Visitor<'de> for DateTimeVisitor {
+impl Visitor<'_> for DateTimeVisitor {
   type Value = DateTime;
 
   #[cfg(not(tarpaulin_include))]
