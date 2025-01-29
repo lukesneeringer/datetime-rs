@@ -131,8 +131,30 @@ impl DateTime {
 impl DateTime {
   /// Set the time zone to the provided time zone, without adjusting the underlying absolute
   /// timestamp.
+  ///
+  /// This method modifies the wall clock time while maintaining the underlying absolute timestamp.
+  /// To modify the timestamp instead, use `in_tz`.
   #[inline]
   pub const fn with_tz(mut self, tz: tz::TimeZoneRef<'static>) -> Self {
+    self.tz = tz::TimeZone::Tz(tz);
+    self
+  }
+
+  /// Set the timestamp to the same wall clock time in the provided time zone.
+  ///
+  /// This method modifies the underlying timestamp while maintaining the wall clock time.
+  /// To maintain the timestamp instead, use `with_tz`.
+  #[inline]
+  pub fn in_tz(mut self, tz: tz::TimeZoneRef<'static>) -> Self {
+    let existing_ut_offset = match self.tz.ut_offset(self.seconds) {
+      Ok(offset) => offset as i64,
+      Err(_) => panic!("Invalid time zone."),
+    };
+    let desired_ut_offset = match tz.find_local_time_type(self.seconds) {
+      Ok(t) => t.ut_offset() as i64,
+      Err(_) => panic!("Invalid time zone for this timestamp."),
+    };
+    self.seconds += existing_ut_offset - desired_ut_offset;
     self.tz = tz::TimeZone::Tz(tz);
     self
   }
@@ -530,6 +552,17 @@ mod tests {
     check!(dt.month() == 4);
     check!(dt.day() == 21);
     check!(dt.hour() == 11);
+  }
+
+  #[cfg(feature = "tz")]
+  #[test]
+  fn test_in_tz() {
+    let dt = DateTime::from_timestamp(1335020400, 0).with_tz(tz::us::EASTERN);
+    check!(dt.hour() == 11);
+    check!(dt.in_tz(tz::us::CENTRAL).hour() == 11);
+    check!(dt.as_seconds() - dt.in_tz(tz::us::CENTRAL).as_seconds() == -3600);
+    check!(dt.in_tz(tz::europe::LONDON).hour() == 11);
+    check!(dt.as_seconds() - dt.in_tz(tz::europe::LONDON).as_seconds() == 3600 * 5);
   }
 
   #[test]
