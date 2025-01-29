@@ -145,7 +145,7 @@ impl DateTime {
   /// This method modifies the underlying timestamp while maintaining the wall clock time.
   /// To maintain the timestamp instead, use `with_tz`.
   #[inline]
-  pub fn in_tz(mut self, tz: tz::TimeZoneRef<'static>) -> Self {
+  pub const fn in_tz(mut self, tz: tz::TimeZoneRef<'static>) -> Self {
     let existing_ut_offset = match self.tz.ut_offset(self.seconds) {
       Ok(offset) => offset as i64,
       Err(_) => panic!("Invalid time zone."),
