@@ -352,7 +352,22 @@ impl TryFrom<RawDateTime> for DateTime {
 
 impl fmt::Debug for DateTime {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "DateTime {{ seconds: {}, nanos: {} }}", self.seconds, self.nanos)
+    if self.nanos == 0 {
+      write!(f, "{}", self.format("%Y-%m-%d %H:%M:%S"))
+    } else if self.nanos % 1_000_000 == 0 {
+      write!(f, "{}", self.format("%Y-%m-%d %H:%M:%S%.3f"))
+    } else if self.nanos % 1_000 == 0 {
+      write!(f, "{}", self.format("%Y-%m-%d %H:%M:%S%.6f"))
+    } else {
+      write!(f, "{}", self.format("%Y-%m-%d %H:%M:%S%.9f"))
+    }
+  }
+}
+
+#[cfg(feature = "log")]
+impl log::kv::ToValue for DateTime {
+  fn to_value(&self) -> log::kv::Value<'_> {
+    log::kv::Value::from_debug(self)
   }
 }
 
@@ -577,6 +592,12 @@ mod tests {
   #[test]
   fn test_debug() {
     let dt = date::date! { 2012-04-21 }.hms(15, 0, 0).build();
-    check!(format!("{:?}", dt) == "DateTime { seconds: 1335020400, nanos: 0 }");
+    check!(format!("{:?}", dt) == "2012-04-21 15:00:00");
+    let dt = date::date! { 2012-04-21 }.hms(15, 0, 0).nanos(500_000_000).build();
+    check!(format!("{:?}", dt) == "2012-04-21 15:00:00.500");
+    let dt = date::date! { 2012-04-21 }.hms(15, 0, 0).nanos(123_450_000).build();
+    check!(format!("{:?}", dt) == "2012-04-21 15:00:00.123450");
+    let dt = date::date! { 2012-04-21 }.hms(15, 0, 0).nanos(123_456_789).build();
+    check!(format!("{:?}", dt) == "2012-04-21 15:00:00.123456789");
   }
 }

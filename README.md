@@ -38,5 +38,6 @@ let dt = datetime! { 2012-04-21 11:00:00 };
 `datetime-rs` ships with the following features:
 
 - **`diesel-pg`**: Enables interop with PostgreSQL `TIMESTAMP` columns using Diesel.
+- **`log`**: Adds a `log::kv::ToValue` implementation.
 - **`serde`**: Enables serialization and desearialization with `serde`. _(Enabled by default.)_
 - **`tz`**: Enables support for time-zone-aware date construction.
