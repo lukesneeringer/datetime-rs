@@ -1,12 +1,12 @@
 [package]
 name = "datetime-rs"
-version = "1.5.0"
-edition = "2021"
+version = "1.6.0"
+edition = "2024"
+rust-version = "1.85"
 authors = ["Luke Sneeringer <luke@sneeringer.com>"]
 description = "Date and time"
 keywords = ["date", "time"]
 categories = ["date-and-time"]
-rust-version = "1.70"
 license = "MIT"
 repository = "https://github.com/lukesneeringer/datetime-rs"
 documentation = "https://docs.rs/datetime_rs"
@@ -21,7 +21,7 @@ exclude = [
 name = "datetime"
 
 [dependencies]
-date-rs = { version = "1.1", default-features = false }
+date-rs = { version = "1.2", default-features = false }
 diesel = { version = "2", optional = true }
 log = { version = "0.4", features = ["kv"], optional = true }
 serde = { version = "1", optional = true }
@@ -37,6 +37,7 @@ serde_test = { version = "1" }
 [features]
 default = ["serde"]
 diesel-pg = ["date-rs/diesel-pg", "dep:diesel", "diesel/postgres"]
+log = ["dep:log", "date-rs/log"]
 serde = ["dep:serde", "date-rs/serde"]
 tz = ["dep:tz-rs", "dep:tzdb", "date-rs/tz"]
 
