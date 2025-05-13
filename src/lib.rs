@@ -36,7 +36,9 @@ macro_rules! datetime {
 }
 
 #[cfg(feature = "diesel-pg")]
-mod db;
+mod diesel_pg;
+#[cfg(feature = "duckdb")]
+mod duckdb;
 mod format;
 pub mod interval;
 #[cfg(feature = "serde")]
@@ -244,6 +246,20 @@ impl DateTime {
   #[inline]
   pub const fn as_nanoseconds(&self) -> i128 {
     self.seconds as i128 * 1_000_000_000 + self.nanos as i128
+  }
+
+  /// The precision required to represent this timestamp with no fidelity loss.
+  #[inline]
+  pub const fn precision(&self) -> Precision {
+    if self.nanos == 0 {
+      Precision::Second
+    } else if self.nanos % 1_000_000 == 0 {
+      Precision::Millisecond
+    } else if self.nanos % 1_000 == 0 {
+      Precision::Microsecond
+    } else {
+      Precision::Nanosecond
+    }
   }
 
   /// Provide the number of seconds since the epoch in the time zone with the same offset as this
@@ -461,6 +477,15 @@ impl FromDate for date::Date {
   }
 }
 
+/// The precision that this timestamp requires in order to represent with no fidelity loss.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Precision {
+  Second,
+  Millisecond,
+  Microsecond,
+  Nanosecond,
+}
+
 #[cfg(test)]
 mod tests {
   use assert2::check;
@@ -468,6 +493,8 @@ mod tests {
 
   use crate::DateTime;
   use crate::FromDate;
+  use crate::Precision;
+  use crate::interval::TimeInterval;
   #[cfg(feature = "tz")]
   use crate::tz;
 
@@ -536,12 +563,24 @@ mod tests {
 
   #[test]
   #[allow(clippy::inconsistent_digit_grouping)]
-  fn test_precision() {
+  fn test_as_precision() {
     let dt = DateTime::ymd(2012, 4, 21).hms(15, 0, 0).build();
     check!(dt.as_seconds() == 1335020400);
     check!(dt.as_milliseconds() == 1335020400_000);
     check!(dt.as_microseconds() == 1335020400_000_000);
     check!(dt.as_nanoseconds() == 1335020400_000_000_000);
+  }
+
+  #[test]
+  fn test_precision() {
+    let mut dt = DateTime::ymd(2012, 4, 21).hms(15, 0, 0).build();
+    check!(dt.precision() == Precision::Second);
+    dt += TimeInterval::new(0, 1_000_000);
+    check!(dt.precision() == Precision::Millisecond);
+    dt += TimeInterval::new(0, 1_000);
+    check!(dt.precision() == Precision::Microsecond);
+    dt += TimeInterval::new(0, 1);
+    check!(dt.precision() == Precision::Nanosecond);
   }
 
   #[cfg(feature = "tz")]
