@@ -1,6 +1,6 @@
 [package]
 name = "datetime-rs"
-version = "1.7.0"
+version = "1.7.1"
 edition = "2024"
 rust-version = "1.85"
 authors = ["Luke Sneeringer <luke@sneeringer.com>"]
@@ -33,7 +33,7 @@ serde = { version = "1", features = ["derive"] }
 serde_test = { version = "1" }
 
 [features]
-default = ["serde"]
+default = ["serde", "duckdb"]
 diesel-pg = ["date-rs/diesel-pg", "dep:diesel", "diesel/postgres"]
 duckdb = ["dep:duckdb", "date-rs/duckdb"]
 log = ["dep:log", "date-rs/log"]
