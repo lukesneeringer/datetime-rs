@@ -116,6 +116,24 @@ impl DateTime {
     }
   }
 
+  /// Create a new date and time object from the given Unix timestamp in milliseconds.
+  pub const fn from_timestamp_millis(millis: i64) -> Self {
+    Self::from_timestamp(millis.div_euclid(1_000), millis.rem_euclid(1_000) as u32)
+  }
+
+  /// Create a new date and time object from the given Unix timestamp in microseconds.
+  pub const fn from_timestamp_micros(micros: i64) -> Self {
+    Self::from_timestamp(micros.div_euclid(1_000_000), micros.rem_euclid(1_000_000) as u32)
+  }
+
+  /// Create a new date and time object from the given Unix timestamp in nanoseconds.
+  pub const fn from_timestamp_nanos(nanos: i128) -> Self {
+    Self::from_timestamp(
+      nanos.div_euclid(1_000_000_000) as i64,
+      nanos.rem_euclid(1_000_000_000) as u32,
+    )
+  }
+
   /// Return the current timestamp.
   ///
   /// ## Panic
@@ -600,12 +618,20 @@ mod tests {
   #[cfg(feature = "tz")]
   #[test]
   fn test_unix_tz() {
-    let dt = DateTime::from_timestamp(1335020400, 0).with_tz(tz::us::EASTERN);
-    check!(dt.as_seconds() == 1335020400);
-    check!(dt.year() == 2012);
-    check!(dt.month() == 4);
-    check!(dt.day() == 21);
-    check!(dt.hour() == 11);
+    #[allow(clippy::inconsistent_digit_grouping)]
+    for dt in [
+      DateTime::from_timestamp(1335020400, 0),
+      DateTime::from_timestamp_millis(1335020400_000),
+      DateTime::from_timestamp_micros(1335020400_000_000),
+      DateTime::from_timestamp_nanos(1335020400_000_000_000),
+    ] {
+      let dt = dt.with_tz(tz::us::EASTERN);
+      check!(dt.as_seconds() == 1335020400);
+      check!(dt.year() == 2012);
+      check!(dt.month() == 4);
+      check!(dt.day() == 21);
+      check!(dt.hour() == 11);
+    }
   }
 
   #[cfg(feature = "tz")]
