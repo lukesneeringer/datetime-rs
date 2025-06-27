@@ -1,6 +1,7 @@
 use std::ops::Add;
 use std::ops::AddAssign;
 use std::ops::Div;
+use std::ops::Mul;
 use std::ops::Sub;
 use std::ops::SubAssign;
 
@@ -14,9 +15,24 @@ pub struct TimeInterval {
 }
 
 impl TimeInterval {
-  /// Create a new time interval from seconds and nanoseconds.
+  /// Create a new [`TimeInterval`] from seconds and nanoseconds.
   pub const fn new(seconds: i64, nanos: u32) -> Self {
     Self { seconds, nanos }
+  }
+
+  /// Create a new [`TimeInterval`] from a value in milliseconds.
+  pub const fn from_milliseconds(millis: i64) -> Self {
+    Self::new(millis.div_euclid(1_000), millis.rem_euclid(1_000) as u32 * 1_000_000)
+  }
+
+  /// Create a new [`TimeInterval`] from a value in microseconds.
+  pub const fn from_microseconds(micros: i64) -> Self {
+    Self::new(micros.div_euclid(1_000_000), micros.rem_euclid(1_000_000) as u32 * 1_000)
+  }
+
+  /// Create a new [`TimeInterval`] from a value in nanoseconds.
+  pub const fn from_nanoseconds(nanos: i128) -> Self {
+    Self::new(nanos.div_euclid(1_000_000_000) as i64, nanos.rem_euclid(1_000_000_000) as u32)
   }
 
   /// The number of seconds this interval represents.
@@ -126,6 +142,22 @@ impl Sub for DateTime {
   }
 }
 
+impl<I: Into<i128>> Mul<I> for TimeInterval {
+  type Output = Self;
+
+  fn mul(self, rhs: I) -> Self::Output {
+    Self::from_nanoseconds(self.as_nanoseconds() * rhs.into())
+  }
+}
+
+impl<I: Into<i128>> Div<I> for TimeInterval {
+  type Output = Self;
+
+  fn div(self, rhs: I) -> Self::Output {
+    Self::from_nanoseconds(self.as_nanoseconds() / rhs.into())
+  }
+}
+
 impl Div for TimeInterval {
   type Output = f64;
 
@@ -141,6 +173,25 @@ mod tests {
   use super::*;
   use crate::DateTime;
   use crate::datetime;
+
+  #[test]
+  fn test_from_fractionals() {
+    for (millis, secs, nanos) in [(2_400, 2, 400_000_000), (-2_400, -3, 600_000_000)] {
+      let interval = TimeInterval::from_milliseconds(millis);
+      check!(interval.seconds() == secs);
+      check!(interval.nanoseconds() == nanos);
+    }
+    for (micros, secs, nanos) in [(2_400_000, 2, 400_000_000), (-2_400_000, -3, 600_000_000)] {
+      let interval = TimeInterval::from_microseconds(micros);
+      check!(interval.seconds() == secs);
+      check!(interval.nanoseconds() == nanos);
+    }
+    for (ns, s, n) in [(2_400_000_000, 2, 400_000_000), (-2_400_000_000, -3, 600_000_000)] {
+      let interval = TimeInterval::from_nanoseconds(ns);
+      check!(interval.seconds() == s);
+      check!(interval.nanoseconds() == n);
+    }
+  }
 
   #[test]
   fn test_add() {
@@ -201,6 +252,20 @@ mod tests {
       datetime! { 2012-04-21 11:00:00 } - datetime! { 2012-04-21 12:00:00 }
         == TimeInterval::new(-3600, 0)
     );
+  }
+
+  #[test]
+  fn test_mul_int() {
+    let interval = TimeInterval::new(3, 500_000_000) * 3;
+    check!(interval.seconds() == 10);
+    check!(interval.nanoseconds() == 500_000_000);
+  }
+
+  #[test]
+  fn test_div_int() {
+    let interval = TimeInterval::new(4, 500_000_000) / 3;
+    check!(interval.seconds() == 1);
+    check!(interval.nanoseconds() == 500_000_000);
   }
 
   #[test]
