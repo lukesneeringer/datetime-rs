@@ -1,3 +1,8 @@
+//! Macro for converting from a domain-specific interval language to nanoseconds.
+//!
+//! This crate is an implementation detail for `datetime-rs`. You should not depend on it directly,
+//! and its contents are subject to change.
+
 use std::sync::LazyLock;
 
 use proc_macro::TokenStream;
