@@ -16,8 +16,8 @@ use syn::parse::ParseStream;
 
 /// Create an expression of seconds and microseconds from a domain-specific language.
 ///
-/// This macro is private API that powers the `datetime::time_delta!` macro. It should not be used
-/// directly.
+/// This macro is private API that powers the `datetime::time_interval!` macro. It should not be
+/// used directly.
 #[proc_macro]
 pub fn nanoseconds(tokens: TokenStream) -> TokenStream {
   let delta = match syn::parse::<Delta>(tokens) {
