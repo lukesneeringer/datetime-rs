@@ -1,4 +1,7 @@
 //! `datetime-rs` provides a representation of a date and time.
+//!
+//! Internal storage is a Unix timestamp and, if the `tz` feature is enabled (which it is not by
+//! default), optionally a `TimeZone`.
 
 use std::cmp::Ordering;
 use std::fmt;
@@ -11,6 +14,7 @@ use strptime::ParseResult;
 use strptime::Parser;
 use strptime::RawDateTime;
 
+/// Construct a date and time from a `YYYY-MM-DD HH:MM:SS` literal.
 #[macro_export]
 macro_rules! datetime {
   ($y:literal-$m:literal-$d:literal $h:literal : $mi:literal : $s:literal) => {{
