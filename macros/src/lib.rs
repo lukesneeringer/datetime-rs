@@ -113,7 +113,7 @@ impl Parse for Delta {
               let mut s = split[0].parse::<i64>().unwrap() * signum;
               let mut n = split[1].parse::<u32>().unwrap() * 10u32.pow(9 - split[1].len() as u32);
               // The nanos aren't signum-aware, so if this is a negative delta, invert the nanos.
-              if s < 0 && n != 0 {
+              if s <= 0 && n != 0 {
                 s -= 1;
                 n = 1_000_000_000 - n;
               }
