@@ -7,7 +7,35 @@ use std::ops::SubAssign;
 
 use crate::DateTime;
 
+#[cfg(feature = "macros")]
+pub mod __private_api {
+  pub use datetime_rs_macros::nanoseconds;
+}
+
+#[macro_export]
+macro_rules! time_interval {
+  ($($interval:tt)+) => { const {
+    $crate::interval::TimeInterval::from_nanoseconds(
+      $crate::interval::__private_api::nanoseconds!($($interval)*)
+    )
+  }}
+}
+
 /// An interval of time between two timestamps.
+///
+/// The easiest way to create a [`TimeInterval`] is often with the [`time_interval`] macro, which
+/// uses a domain-specific language:
+///
+/// ## Examples
+///
+/// ```
+/// use datetime::interval::TimeInterval;
+/// use datetime::time_interval;
+///
+/// assert_eq!(time_interval!(5m 30s), TimeInterval::new(330, 0));
+/// assert_eq!(time_interval!(-1h 30m), TimeInterval::new(-5_400, 0));
+/// assert_eq!(time_interval!(10.5s), TimeInterval::new(10, 500_000_000));
+/// ```
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct TimeInterval {
   seconds: i64,
@@ -173,6 +201,22 @@ mod tests {
   use super::*;
   use crate::DateTime;
   use crate::datetime;
+  use crate::time_interval;
+
+  #[test]
+  fn test_interval_macro() {
+    check!(time_interval!(1d) == TimeInterval::new(86_400, 0));
+    check!(time_interval!(2h) == TimeInterval::new(7_200, 0));
+    check!(time_interval!(1m) == TimeInterval::new(60, 0));
+    check!(time_interval!(1h30m) == TimeInterval::new(5_400, 0));
+    check!(time_interval!(1h 30m) == TimeInterval::new(5_400, 0));
+    check!(time_interval!(-1h 30m) == TimeInterval::new(-5_400, 0));
+    check!(time_interval!(1m 30s) == TimeInterval::new(90, 0));
+    check!(time_interval!(-1m 20s) == TimeInterval::new(-80, 0));
+    check!(time_interval!(-20s) == TimeInterval::new(-20, 0));
+    check!(time_interval!(-1.25s) == TimeInterval::new(-2, 750_000_000));
+    check!(time_interval!(1m 1.5s) == TimeInterval::new(61, 500_000_000));
+  }
 
   #[test]
   fn test_from_fractionals() {

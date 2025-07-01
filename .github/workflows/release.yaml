@@ -9,8 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Publish the `date-rs` crate.
-        run: cargo publish
+      - name: Publish the `datetime-rs-macros` crate.
+        run: cargo publish -p datetime-rs-macros
+        env:
+          CARGO_NET_GIT_FETCH_WITH_CLI: true
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      - name: Publish the `datetime-rs` crate.
+        run: cargo publish -p datetime-rs
         env:
           CARGO_NET_GIT_FETCH_WITH_CLI: true
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

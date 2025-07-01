@@ -1,0 +1,22 @@
+[package]
+name = "datetime-rs-macros"
+version = { workspace = true }
+edition = { workspace = true }
+rust-version = { workspace = true }
+authors = { workspace = true }
+description = { workspace = true }
+keywords = { workspace = true }
+categories = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+documentation = { workspace = true }
+readme = { workspace = true }
+
+[dependencies]
+proc-macro2 = "1"
+quote = "1"
+regex = "1"
+syn = "2"
+
+[lib]
+proc-macro = true
