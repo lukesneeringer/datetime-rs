@@ -236,6 +236,7 @@ mod tests {
     check!(time_interval!(-1.25s) == TimeInterval::new(-2, 750_000_000));
     check!(time_interval!(1m 1.5s) == TimeInterval::new(61, 500_000_000));
     check!(time_interval!(-0.5s) == TimeInterval::new(-1, 500_000_000));
+    check!(time_interval!(0.5s) == TimeInterval::new(0, 500_000_000));
   }
 
   #[test]
