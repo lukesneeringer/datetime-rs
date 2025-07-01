@@ -1,3 +1,8 @@
+//! Elapsed time (duration) between two fixed [`DateTime`]s.
+//!
+//! A [`TimeInterval`] represents elapsed time, or "duration", and is the struct provided for doing
+//! "timestamp math".
+
 use std::ops::Add;
 use std::ops::AddAssign;
 use std::ops::Div;
@@ -12,6 +17,20 @@ pub mod __private_api {
   pub use datetime_rs_macros::nanoseconds;
 }
 
+/// Construct a [`TimeInterval`] from a domain-specific language.
+///
+/// The language is approximately: `[+-]? ([0-9]+d)? ([0-9]+h)/ [0-9]+m)? ([0-9]+(\.[0-9]+)?s)?`.
+///
+/// ## Examples
+///
+/// ```
+/// use datetime::interval::TimeInterval;
+/// use datetime::time_interval;
+///
+/// assert_eq!(time_interval!(5m 30s), TimeInterval::new(330, 0));
+/// assert_eq!(time_interval!(-1h 30m), TimeInterval::new(-5_400, 0));
+/// assert_eq!(time_interval!(10.5s), TimeInterval::new(10, 500_000_000));
+/// ```
 #[macro_export]
 macro_rules! time_interval {
   ($($interval:tt)+) => { const {
@@ -21,7 +40,7 @@ macro_rules! time_interval {
   }}
 }
 
-/// An interval of time between two timestamps.
+/// An interval or duration of time between two [`DateTime`]s.
 ///
 /// The easiest way to create a [`TimeInterval`] is often with the [`time_interval`] macro, which
 /// uses a domain-specific language:
