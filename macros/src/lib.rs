@@ -25,7 +25,20 @@ pub fn nanoseconds(tokens: TokenStream) -> TokenStream {
     Err(err) => return err.into_compile_error().into(),
   };
   let nanos = delta.nanoseconds;
-  quote! { #nanos }.into()
+
+  // **Note:** This mechanic where we siphon off the negative sign only to reattach it in a
+  // const expression immediately below likely appears unnecessary. We're doing it because it
+  // works around a false positive error that rust-analyzer emits when using `nanoseconds!` with
+  // negative numbers. Should the issue with rust-analyzer's static analysis be fixed in the
+  // future, this otherwise-unnecessary logic can be removed.
+  match nanos < 0 {
+    true => {
+      let nanos = nanos.abs();
+      quote! { const { - #nanos }}
+    },
+    false => quote! { #nanos },
+  }
+  .into()
 }
 
 struct Delta {
