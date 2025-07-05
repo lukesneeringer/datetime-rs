@@ -60,7 +60,7 @@ pub mod tz {
   #[derive(Clone, Copy, Debug, Eq, PartialEq)]
   pub(crate) enum TimeZone {
     Unspecified,
-    Tz(::tz::TimeZoneRef<'static>),
+    Tz(crate::tz::TimeZoneRef<'static>),
     FixedOffset(i32),
   }
 
