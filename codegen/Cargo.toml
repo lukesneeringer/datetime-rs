@@ -1,5 +1,5 @@
 [package]
-name = "datetime-rs-macros"
+name = "datetime-rs-codegen"
 version = { workspace = true }
 edition = { workspace = true }
 rust-version = { workspace = true }
@@ -10,10 +10,10 @@ categories = { workspace = true }
 license = { workspace = true }
 repository = { workspace = true }
 documentation = { workspace = true }
-readme = "README.md"
+readme = { workspace = true }
 
 [dependencies]
-datetime-rs-codegen = { workspace = true }
-
-[lib]
-proc-macro = true
+proc-macro2 = "1"
+quote = "1"
+regex = "1"
+syn = "2"

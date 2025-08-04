@@ -10,7 +10,7 @@ categories = { workspace = true }
 license = { workspace = true }
 repository = { workspace = true }
 documentation = { workspace = true }
-readme = { workspace = true }
+readme = "README.md"
 exclude = ["/.github/*", "/rustfmt.toml", "/.prettierrc.yaml"]
 
 [lib]
@@ -41,14 +41,14 @@ serde = ["dep:serde", "date-rs/serde"]
 tz = ["date-rs/tz"]
 
 [lints.rust]
-unexpected_cfgs = { level = "allow", check-cfg = ['cfg(tarpaulin_include)'] }
+unexpected_cfgs = { level = "allow", check-cfg = ['cfg(coverage_nightly)'] }
 
 [workspace]
-members = ["macros"]
+members = ["codegen", "macros"]
 resolver = "3"
 
 [workspace.package]
-version = "1.10.3"
+version = "1.11.0"
 edition = "2024"
 rust-version = "1.85"
 authors = ["Luke Sneeringer <luke@sneeringer.com>"]
@@ -58,7 +58,7 @@ categories = ["date-and-time"]
 license = "MIT"
 repository = "https://github.com/lukesneeringer/datetime-rs"
 documentation = "https://docs.rs/datetime_rs"
-readme = "README.md"
 
 [workspace.dependencies]
-datetime-rs-macros = { version = "1", path = "macros" }
+datetime-rs-codegen = { version = "1.11", path = "codegen" }
+datetime-rs-macros = { version = "1.11", path = "macros" }
