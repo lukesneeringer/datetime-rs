@@ -11,9 +11,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install DuckDB
         run: |
-          curl https://github.com/duckdb/duckdb/releases/download/v1.3.2/libduckdb-linux-amd64.zip > libduckdb.zip && \
+          curl -L https://github.com/duckdb/duckdb/releases/download/v1.3.2/libduckdb-linux-amd64.zip > libduckdb.zip && \
           mkdir duckdb && \
-          ls -al . && \
           unzip libduckdb.zip duckdb/
         working-directory: /opt/
       - run: cargo test --all-features --workspace
