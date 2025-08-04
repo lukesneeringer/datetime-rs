@@ -32,6 +32,7 @@ pub mod __private_api {
 /// assert_eq!(time_interval!(10.5s), TimeInterval::new(10, 500_000_000));
 /// ```
 #[macro_export]
+#[cfg(feature = "macros")]
 macro_rules! time_interval {
   ($($interval:tt)+) => { const {
     $crate::interval::TimeInterval::from_nanoseconds(
@@ -210,6 +211,39 @@ impl Div for TimeInterval {
 
   fn div(self, rhs: Self) -> Self::Output {
     self.as_nanoseconds() as f64 / rhs.as_nanoseconds() as f64
+  }
+}
+
+#[cfg(feature = "syn")]
+mod syn {
+  use datetime_rs_codegen::Delta;
+  use syn::Result;
+  use syn::parse::Parse;
+  use syn::parse::ParseStream;
+
+  use super::TimeInterval;
+
+  #[cfg_attr(docsrs, doc(cfg(feature = "syn")))]
+  impl Parse for TimeInterval {
+    fn parse(input: ParseStream) -> Result<Self> {
+      let delta = Delta::parse(input)?;
+      Ok(Self::new(delta.seconds(), delta.nanos()))
+    }
+  }
+
+  #[cfg(test)]
+  mod tests {
+    use assert2::check;
+    use quote::quote;
+
+    use super::*;
+
+    #[test]
+    fn test_parse() -> Result<()> {
+      check!(syn::parse2::<TimeInterval>(quote! { 15m 30s })? == time_interval!(15m 30s));
+      check!(syn::parse2::<TimeInterval>(quote! { -1h 15m })? == time_interval!(-1h 15m));
+      Ok(())
+    }
   }
 }
 

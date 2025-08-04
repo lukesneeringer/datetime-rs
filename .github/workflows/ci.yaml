@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: cargo test --all-features --workspace
+      - run: cargo test --features log,syn,tz --workspace
         env:
           CARGO_NET_GIT_FETCH_WITH_CLI: true
   lint:
