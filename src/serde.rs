@@ -8,6 +8,7 @@ use serde::de::Visitor;
 
 use crate::DateTime;
 
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl Serialize for DateTime {
   fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
     if self.nanos == 0 {
@@ -35,6 +36,7 @@ impl Visitor<'_> for DateTimeVisitor {
   }
 }
 
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl<'de> Deserialize<'de> for DateTime {
   fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
     deserializer.deserialize_str(DateTimeVisitor)
