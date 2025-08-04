@@ -9,15 +9,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: cargo test --features log,syn,tz --workspace
+      - name: Install DuckDB
+        run: |
+          curl https://github.com/duckdb/duckdb/releases/download/v1.3.2/libduckdb-linux-amd64.zip > libduckdb.zip && \
+          mkdir duckdb && \
+          unzip libduckdb.zip duckdb/
+        working-directory: /opt/
+      - run: cargo test --all-features --workspace
         env:
           CARGO_NET_GIT_FETCH_WITH_CLI: true
+          DUCKDB_INCLUDE_DIR: /opt/duckdb
+          DUCKDB_LIB_DIR: /opt/duckdb
   lint:
     runs-on: ubuntu-latest
+    container:
+      image: rustlang/rust:nightly-slim
     steps:
       - uses: actions/checkout@v4
-      - run: rustup toolchain install nightly
-      - run: rustup component add rustfmt --toolchain nightly
+      - run: rustup +nightly component add rustfmt
       - run: cargo +nightly fmt -- --check
         env:
           CARGO_NET_GIT_FETCH_WITH_CLI: true

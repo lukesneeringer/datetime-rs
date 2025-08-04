@@ -29,7 +29,6 @@ syn = { version = "2", features = ["parsing"], optional = true }
 
 [dev-dependencies]
 assert2 = "0.3"
-duckdb = { version = "1", features = ["bundled"] }
 quote = "1"
 serde = { version = "1", features = ["derive"] }
 serde_test = { version = "1" }
