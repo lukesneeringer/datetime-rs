@@ -3,6 +3,9 @@
 //! Internal storage is a Unix timestamp and, if the `tz` feature is enabled (which it is not by
 //! default), optionally a `TimeZone`.
 
+#![doc(html_root_url = "https://docs.rs/datetime-rs/latest")]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 use std::cmp::Ordering;
 use std::fmt;
 use std::str::FromStr;
@@ -52,8 +55,11 @@ pub use date::Date;
 pub use date::Weekday;
 pub use date::date;
 
-/// Time zone compnents (re-exported from `date-rs` crate).
+/// Time zone compnents.
+///
+/// These are re-exported from the `date-rs` crate.
 #[cfg(feature = "tz")]
+#[cfg_attr(docsrs, doc(cfg(feature = "tz")))]
 pub mod tz {
   pub use date::tz::*;
 
