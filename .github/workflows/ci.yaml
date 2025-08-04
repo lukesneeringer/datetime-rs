@@ -25,6 +25,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: cargo doc --no-deps --bins
+      - run: cargo doc --no-deps
         env:
           CARGO_NET_GIT_FETCH_WITH_CLI: true
