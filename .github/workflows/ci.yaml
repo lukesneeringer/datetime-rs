@@ -16,6 +16,7 @@ jobs:
           curl -L https://github.com/duckdb/duckdb/releases/download/v1.3.2/libduckdb-linux-amd64.zip > libduckdb.zip && \
           unzip libduckdb.zip
         working-directory: /opt/
+      - run: ls -al /opt/duckdb/
       - run: cargo test --all-features --workspace
         env:
           CARGO_NET_GIT_FETCH_WITH_CLI: true
