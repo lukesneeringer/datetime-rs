@@ -4,18 +4,27 @@ on:
   release:
     types:
       - created
+env:
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
+  CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 jobs:
-  publish:
+  publish_codegen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish the `datetime-rs-codegen` crate.
+        run: cargo publish -p datetime-rs-codegen
+  publish_macros:
+    needs: publish_codegen
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Publish the `datetime-rs-macros` crate.
         run: cargo publish -p datetime-rs-macros
-        env:
-          CARGO_NET_GIT_FETCH_WITH_CLI: true
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+  publish:
+    needs: publish_macros
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - name: Publish the `datetime-rs` crate.
         run: cargo publish --all-features -p datetime-rs
-        env:
-          CARGO_NET_GIT_FETCH_WITH_CLI: true
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
