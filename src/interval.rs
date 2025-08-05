@@ -13,6 +13,7 @@ use std::ops::SubAssign;
 use crate::DateTime;
 
 #[cfg(feature = "macros")]
+#[doc(hidden)]
 pub mod __private_api {
   pub use datetime_rs_macros::nanoseconds;
 }
@@ -33,6 +34,7 @@ pub mod __private_api {
 /// ```
 #[macro_export]
 #[cfg(feature = "macros")]
+#[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
 macro_rules! time_interval {
   ($($interval:tt)+) => { const {
     $crate::interval::TimeInterval::from_nanoseconds(
