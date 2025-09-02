@@ -313,7 +313,7 @@ impl DateTime {
 
 impl DateTime {
   /// Format the given date and time according to the provided `strftime`-like string.
-  pub fn format(&self, format: &'static str) -> FormattedDateTime {
+  pub fn format(&self, format: &'static str) -> FormattedDateTime<'_> {
     FormattedDateTime { dt: self, format }
   }
 }
