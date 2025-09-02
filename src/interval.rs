@@ -123,8 +123,8 @@ impl Add<TimeInterval> for DateTime {
   type Output = DateTime;
 
   fn add(self, rhs: TimeInterval) -> Self::Output {
-    let seconds = self.seconds + rhs.seconds;
-    let nanos = self.nanos + rhs.nanos;
+    let seconds = self.seconds + rhs.seconds + ((self.nanos + rhs.nanos) / 1_000_000_000) as i64;
+    let nanos = (self.nanos + rhs.nanos) % 1_000_000_000;
     Self {
       seconds,
       nanos,
@@ -308,6 +308,11 @@ mod tests {
       datetime! { 2012-04-21 11:00:00 } + TimeInterval::new(0, 500_000_000)
         == DateTime::ymd(2012, 4, 21).hms(11, 0, 0).nanos(500_000_000).build()
     );
+    let incr = datetime! { 2012-04-21 11:00:00 }
+      + TimeInterval::new(0, 500_000_000)
+      + TimeInterval::new(0, 500_000_000);
+    check!(incr.seconds % 10 == 1);
+    check!(incr.nanos == 0);
   }
 
   #[test]
