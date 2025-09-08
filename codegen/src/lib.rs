@@ -163,6 +163,12 @@ impl Parse for Delta {
       // Increment total seconds and nanos.
       pieces.seconds += secs;
       pieces.nanos += nanoseconds;
+
+      // This interval may be being used in a meta attribute alongside other key-value arguments.
+      // If we see a comma, that's a signal to stop.
+      if input.peek(Token![,]) {
+        break;
+      }
     }
 
     // Done; return the seconds and nanoseconds.
