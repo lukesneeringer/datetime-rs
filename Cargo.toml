@@ -11,7 +11,7 @@ license = { workspace = true }
 repository = { workspace = true }
 documentation = { workspace = true }
 readme = "README.md"
-exclude = ["/.github/*", "/rustfmt.toml", "/.prettierrc.yaml"]
+exclude = ["/.github/*", "/.prettierrc.yaml", "/rustfmt.toml"]
 
 [lib]
 name = "datetime"
@@ -36,11 +36,11 @@ serde_test = { version = "1" }
 [features]
 default = ["macros", "serde"]
 diesel-pg = ["date-rs/diesel-pg", "dep:diesel", "diesel/postgres"]
-duckdb = ["dep:duckdb", "date-rs/duckdb"]
+duckdb = ["date-rs/duckdb", "dep:duckdb"]
 macros = ["dep:datetime-rs-macros"]
-log = ["dep:log", "date-rs/log"]
-serde = ["dep:serde", "date-rs/serde"]
-syn = ["dep:syn", "dep:datetime-rs-codegen"]
+log = ["date-rs/log", "dep:log"]
+serde = ["date-rs/serde", "dep:serde"]
+syn = ["dep:datetime-rs-codegen", "dep:syn"]
 tz = ["date-rs/tz"]
 
 [lints.rust]
@@ -56,7 +56,7 @@ members = ["codegen", "macros"]
 resolver = "3"
 
 [workspace.package]
-version = "1.11.3"
+version = "1.12.0"
 edition = "2024"
 rust-version = "1.85"
 authors = ["Luke Sneeringer <luke@sneeringer.com>"]

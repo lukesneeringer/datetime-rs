@@ -194,8 +194,6 @@ enum Padding {
 mod tests {
   use assert2::check;
 
-  use crate::datetime;
-
   #[test]
   fn test_format() {
     let date = datetime! { 2012-04-21 11:00:00 };

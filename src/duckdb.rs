@@ -60,7 +60,6 @@ mod tests {
   use assert2::check;
 
   use super::*;
-  use crate::datetime;
 
   #[test]
   fn test_from_sql() -> FromSqlResult<()> {
