@@ -49,7 +49,6 @@ mod tests {
   use serde_test::assert_tokens;
 
   use crate::DateTime;
-  use crate::datetime;
 
   #[test]
   fn test_serde() {

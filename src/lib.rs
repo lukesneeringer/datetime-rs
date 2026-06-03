@@ -17,20 +17,29 @@ use strptime::ParseResult;
 use strptime::Parser;
 use strptime::RawDateTime;
 
-/// Construct a date and time from a `YYYY-MM-DD HH:MM:SS` literal.
+/// Construct a date and time from a `YYYY-MM-DD HH:MM:SS[.fraction]` literal.
+///
+/// The seconds component may be an integer (`45`) or a decimal (`45.5`, `45.123_456_789`).
+/// Fractional digits beyond nanosecond precision are ignored.
 #[macro_export]
 macro_rules! datetime {
   ($y:literal-$m:literal-$d:literal $h:literal : $mi:literal : $s:literal) => {{
     #[allow(clippy::zero_prefixed_literal)]
     {
-      $crate::DateTime::ymd($y, $m, $d).hms($h, $mi, $s).build()
+      const __SN: (u8, u32) = $crate::__private::parse_second(::core::stringify!($s));
+      $crate::DateTime::ymd($y, $m, $d).hms($h, $mi, __SN.0).nanos(__SN.1).build()
     }
   }};
   ($y:literal-$m:literal-$d:literal $h:literal : $mi:literal : $s:literal $($tz:ident)::+) => {{
     #[cfg(feature = "tz")]
     #[allow(clippy::zero_prefixed_literal)]
     {
-      match $crate::DateTime::ymd($y, $m, $d).hms($h, $mi, $s).tz($crate::tz::$($tz)::+) {
+      const __SN: (u8, u32) = $crate::__private::parse_second(::core::stringify!($s));
+      match $crate::DateTime::ymd($y, $m, $d)
+        .hms($h, $mi, __SN.0)
+        .nanos(__SN.1)
+        .tz($crate::tz::$($tz)::+)
+      {
         Ok(dt) => dt.build(),
         Err(_) => panic!("invalid date/time and time zone combination"),
       }
@@ -40,6 +49,58 @@ macro_rules! datetime {
       compile_error!("The `tz` feature must be enabled to specify a time zone.");
     }
   }};
+}
+
+/// Implementation details exposed solely for use by this crate's macros. Not public API.
+#[doc(hidden)]
+pub mod __private {
+  /// Parse the second component of a `datetime!` literal at compile time.
+  ///
+  /// Accepts either an integer (`"45"`) or a decimal (`"45.5"`, `"45.123456789"`) and returns
+  /// `(whole_seconds, nanoseconds)`. Fractional digits past nine are truncated; underscores and
+  /// trailing type suffixes (e.g. `_f64`) are tolerated.
+  pub const fn parse_second(s: &str) -> (u8, u32) {
+    let b = s.as_bytes();
+    let mut sec: u8 = 0;
+    let mut i = 0;
+    while i < b.len() {
+      let c = b[i];
+      if c == b'.' {
+        break;
+      }
+      if c == b'_' {
+        i += 1;
+        continue;
+      }
+      assert!(c >= b'0' && c <= b'9', "datetime! second must be a numeric literal");
+      sec = sec * 10 + (c - b'0');
+      i += 1;
+    }
+    if i == b.len() {
+      return (sec, 0);
+    }
+    i += 1; // skip '.'
+    let mut nanos: u32 = 0;
+    let mut digits = 0;
+    while i < b.len() && digits < 9 {
+      let c = b[i];
+      if c == b'_' {
+        i += 1;
+        continue;
+      }
+      if c < b'0' || c > b'9' {
+        break;
+      }
+      nanos = nanos * 10 + (c - b'0') as u32;
+      i += 1;
+      digits += 1;
+    }
+    while digits < 9 {
+      nanos *= 10;
+      digits += 1;
+    }
+    (sec, nanos)
+  }
 }
 
 #[cfg(feature = "diesel-pg")]
@@ -552,6 +613,30 @@ mod tests {
     check!(dt.hour() == 13);
     check!(dt.minute() == 15);
     check!(dt.second() == 45);
+  }
+
+  #[test]
+  fn test_fractional_seconds_literal() {
+    let dt = datetime! { 2024-02-29 13:15:45.5 };
+    check!(dt.second() == 45);
+    check!(dt.nanosecond() == 500_000_000);
+
+    let dt = datetime! { 2024-02-29 13:15:45.123_456_789 };
+    check!(dt.second() == 45);
+    check!(dt.nanosecond() == 123_456_789);
+
+    // Integer form still works and yields zero nanos.
+    let dt = datetime! { 2024-02-29 13:15:45 };
+    check!(dt.second() == 45);
+    check!(dt.nanosecond() == 0);
+  }
+
+  #[test]
+  #[cfg(feature = "tz")]
+  fn test_fractional_seconds_literal_tz() {
+    let dt = datetime! { 2012-04-21 11:00:00.250 us::EASTERN };
+    check!(dt.hour() == 11);
+    check!(dt.nanosecond() == 250_000_000);
   }
 
   #[test]

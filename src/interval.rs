@@ -255,8 +255,6 @@ mod tests {
 
   use super::*;
   use crate::DateTime;
-  use crate::datetime;
-  use crate::time_interval;
 
   #[test]
   fn test_interval_macro() {
