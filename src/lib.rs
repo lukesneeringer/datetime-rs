@@ -189,12 +189,12 @@ impl DateTime {
 
   /// Create a new date and time object from the given Unix timestamp in milliseconds.
   pub const fn from_timestamp_millis(millis: i64) -> Self {
-    Self::from_timestamp(millis.div_euclid(1_000), millis.rem_euclid(1_000) as u32)
+    Self::from_timestamp(millis.div_euclid(1_000), millis.rem_euclid(1_000) as u32 * 1_000_000)
   }
 
   /// Create a new date and time object from the given Unix timestamp in microseconds.
   pub const fn from_timestamp_micros(micros: i64) -> Self {
-    Self::from_timestamp(micros.div_euclid(1_000_000), micros.rem_euclid(1_000_000) as u32)
+    Self::from_timestamp(micros.div_euclid(1_000_000), micros.rem_euclid(1_000_000) as u32 * 1_000)
   }
 
   /// Create a new date and time object from the given Unix timestamp in nanoseconds.
@@ -682,6 +682,43 @@ mod tests {
     check!(dt.as_milliseconds() == 1335020400_000);
     check!(dt.as_microseconds() == 1335020400_000_000);
     check!(dt.as_nanoseconds() == 1335020400_000_000_000);
+  }
+
+  #[test]
+  #[allow(clippy::inconsistent_digit_grouping)]
+  fn test_from_timestamp_fractional() {
+    let dt = DateTime::from_timestamp_millis(1335020400_123);
+    check!(dt.as_seconds() == 1335020400);
+    check!(dt.nanosecond() == 123_000_000);
+    check!(dt.as_milliseconds() == 1335020400_123);
+
+    let dt = DateTime::from_timestamp_micros(1335020400_123_456);
+    check!(dt.as_seconds() == 1335020400);
+    check!(dt.nanosecond() == 123_456_000);
+    check!(dt.as_microseconds() == 1335020400_123_456);
+
+    let dt = DateTime::from_timestamp_nanos(1335020400_123_456_789);
+    check!(dt.as_seconds() == 1335020400);
+    check!(dt.nanosecond() == 123_456_789);
+    check!(dt.as_nanoseconds() == 1335020400_123_456_789);
+  }
+
+  #[test]
+  fn test_from_timestamp_fractional_negative() {
+    let dt = DateTime::from_timestamp_millis(-1_500);
+    check!(dt.as_seconds() == -2);
+    check!(dt.nanosecond() == 500_000_000);
+    check!(dt.as_milliseconds() == -1_500);
+
+    let dt = DateTime::from_timestamp_micros(-1_500_000);
+    check!(dt.as_seconds() == -2);
+    check!(dt.nanosecond() == 500_000_000);
+    check!(dt.as_microseconds() == -1_500_000);
+
+    let dt = DateTime::from_timestamp_nanos(-1_500_000_000);
+    check!(dt.as_seconds() == -2);
+    check!(dt.nanosecond() == 500_000_000);
+    check!(dt.as_nanoseconds() == -1_500_000_000);
   }
 
   #[test]
